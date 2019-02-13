@@ -1,0 +1,124 @@
+---
+title: "IconicRFinal"
+author: "Rhys Jevon"
+date: "13 February 2019"
+output: html_document
+---
+
+
+
+```{r}
+library(nnet)
+##setwd("C:/Data/")
+icon <- read.csv(file="IconicData.csv", header=TRUE, sep=",")
+
+head(icon)
+names(icon) <- substring(names(icon), 9)
+
+iconplots<-icon[,-c(1,4)]
+```
+
+
+```{r}
+outerlayer<-seq(from = 0, to = 41, by = 4)
+
+##Boxplots for each variable, 4 on each page
+par(mfrow=c(2,2))
+
+for (n in outerlayer){
+for (i in 1:4) {
+        boxplot(iconplots[,n+i], main=names(iconplots[n+i]), type="l")
+}
+readline(prompt="Press [enter] to continue")
+}
+```
+
+
+##One customer has generated $250,000 in revenue, wow
+##In addition to this data was examined in Excel, where the two corrupted columns were found
+
+
+```{r}
+##Days Since Last order column is wrong - it has been increased by a factor of 24
+##Average Discount Used column in wrong - it has also been increased by a factor of 10000
+icon$days_since_last_order <- icon$days_since_last_order/24
+icon$average_discount_used <- icon$average_discount_used/10000
+
+icon2<-icon
+
+
+##Sometimes simple is best. Number of male or female items is the most logical way we have to infer gender
+##K-means was not doing a good job of splitting by gender
+icon2$gender <- ifelse(icon2$male_items > icon2$female_items, "Male", "Female")
+```
+
+##Adding a couple new features to data
+
+```{r}
+icon2$propmale<- icon2$male_items/(icon2$male_items+icon2$female_items+0.0000001)
+icon2$propfemale<- icon2$female_items/(icon2$male_items+icon2$female_items+0.0000001)
+icon2$timerev2<-icon2$revenue/(icon2$days_since_first_order+1)
+icon2$propdiscount<-icon2$coupon_discount_applied/(icon2$revenue+1)
+
+icon2[is.na(icon2)] <- 0
+```
+
+
+
+
+
+```{r, message=F}
+##Now build random forest on features and bootstrap 50 times to estimate error rate
+#Given that our inferred gender is correct
+set.seed(115)
+
+#70/30 training test split
+icontrain<- sample(1:46279,32395)
+icontest <- setdiff(1:46279,icontrain)
+
+
+ideal <- class.ind(icon2$gender)
+
+iconANN = nnet(icon2[icontrain,-c(1,4,44)], ideal[icontrain,], size=12, softmax=TRUE)
+table(predict(iconANN, icon2[icontest,-c(1,4,44)], type="class"),icon2[icontest,]$gender)
+
+
+accuracy<-(10350+2419)/(10350+2419+94+21)
+print(accuracy)
+
+##99% accuracy on this training/test split. Should use k-fold cv to get a confidence interval of accuracy
+
+```
+
+```{r}
+set.seed(12241)
+accuracy<-list()
+
+for (i in 1:25) {
+icontrain<- sample(1:46279,32395)
+icontest<- setdiff(1:46279,icontrain)
+
+
+ideal <- class.ind(icon2$gender)
+
+iconANN = nnet(icon2[icontrain,-c(1,4,44)], ideal[icontrain,], size=12, softmax=TRUE)
+t<-table(predict(iconANN, icon2[icontest,-c(1,4,44)], type="class"),icon2[icontest,]$gender)
+
+accuracy[i]<-(t[1]+t[4])/(t[1]+t[2]+t[3]+t[4])
+print("i/25")
+}
+
+##boxplot model accuracy
+accuracyv<-unlist(accuracy)
+boxplot(accuracyv)
+```
+
+
+
+
+t<-table(predict(iconANN, icon2[icontest,-c(1,4,44)], type="class"),icon2[icontest,]$gender)
+
+
+
+
+
