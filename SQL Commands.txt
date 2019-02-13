@@ -1,0 +1,30 @@
+1. What was the total revenue to the nearest dollar for customers who have paid by credit card?
+SELECT sum(revenue)
+FROM customers
+WHERE cc_payments = 1
+
+
+2. What percentage of customers who have purchased female items have paid by credit card?
+SELECT AVG(CASE WHEN cc_payments = 1 THEN 1 ELSE 0 END)
+FROM   customers
+WHERE female_items > 0
+
+
+3. What was the average revenue for customers who used either iOS, Android or Desktop?
+select AVG(revenue) 
+FROM customers 
+WHERE desktop_orders > 0
+OR android_orders > 0
+OR ios_orders > 0
+
+
+4. We want to run an email campaign promoting a new mens luxury brand. Can you provide a list of customers we should send to?
+--Question - Do we want to target all people who purchase male items, only those who purchase over a certain amount, 
+--or those who subscribe to the newsletter and purchase majority male items?
+--Would need to consult others to formulate best strategy, but will assume that those who purchased male items before
+--and spent over $1000 would be interest
+
+SELECT customer_id 
+FROM customers
+WHERE CASE WHEN male_items > 0 AND revenue >= 1000 THEN 1 ELSE 0 END == 1
+
