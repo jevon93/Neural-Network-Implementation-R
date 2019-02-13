@@ -112,13 +112,3 @@ print("i/25")
 accuracyv<-unlist(accuracy)
 boxplot(accuracyv)
 ```
-
-
-
-
-t<-table(predict(iconANN, icon2[icontest,-c(1,4,44)], type="class"),icon2[icontest,]$gender)
-
-
-
-
-
